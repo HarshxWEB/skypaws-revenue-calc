@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airport Boarding Business Planner</title>
+<style>
+    :root {
+        --brand: #4f46e5;
+        --accent: #818cf8;
+        --bg: #f3f4f6;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --text-sub: #6b7280;
+        --success: #10b981;
+        --danger: #ef4444;
+        --border: #e5e7eb;
+    }
+
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+    
+    .layout { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+    
+    /* LEFT PANEL: CONFIGURATION */
+    .config-panel { background: var(--surface); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-height: 95vh; overflow-y: auto; }
+    .config-header { margin-bottom: 24px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+    h2 { font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text); }
+    .section-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub); font-weight: 600; margin: 24px 0 12px 0; display: flex; align-items: center; gap: 8px; }
+    
+    .control-item { margin-bottom: 20px; }
+    .control-top { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; }
+    .val-display { color: var(--brand); font-weight: 700; }
+    
+    input[type=range] { width: 100%; -webkit-appearance: none; height: 6px; background: #e5e7eb; border-radius: 4px; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--brand); border-radius: 50%; cursor: pointer; transition: transform 0.1s; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+    /* RIGHT PANEL: ANALYTICS */
+    .dashboard-panel { display: flex; flex-direction: column; gap: 20px; }
+    
+    /* SUMMARY CARDS */
+    .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .metric-card { background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+    .metric-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--brand); }
+    .metric-title { font-size: 0.85rem; color: var(--text-sub); text-transform: uppercase; font-weight: 600; }
+    .metric-val { font-size: 2rem; font-weight: 800; margin-top: 4px; color: var(--text); }
+    .metric-sub { font-size: 0.85rem; margin-top: 4px; font-weight: 500; }
+    
+    /* P&L TABLE */
+    .finance-card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 24px; }
+    .table-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed var(--border); font-size: 0.95rem; }
+    .table-row:last-child { border-bottom: none; }
+    .table-head { background: #f9fafb; padding: 10px; border-radius: 6px; font-weight: 700; border-bottom: none; margin-bottom: 10px; color: var(--text-sub); font-size: 0.85rem; text-transform: uppercase; }
+    .row-total { border-top: 2px solid var(--border); margin-top: 8px; padding-top: 16px; font-weight: 700; font-size: 1.1rem; }
+    
+    /* MEMBERSHIP TOGGLE */
+    .toggle-section { background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe; margin-bottom: 20px; }
+    
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="layout">
+    
+    <div class="config-panel">
+        <div class="config-header">
+            <h2>🛠️ Business Parameters</h2>
+            <div style="font-size:0.85rem; color:var(--text-sub); margin-top:4px;">Default values are market averages. Adjust freely.</div>
+        </div>
+
+        <div class="section-label">1. Infrastructure (CAPEX)</div>
+        
+        <div class="control-item">
+            <div class="control-top"><span>Kennel Units</span> <span class="val-display" id="d-kennels">30</span></div>
+            <input type="range" id="i-kennels" min="10" max="100" value="30">
+        </div>
+        <div class="control-item">
+            <div class="control-top"><span>Construction Cost (Avg/Unit)</span> <span class="val-display">₹<span id="d-const">25,000</span></span></div>
+            <input type="range" id="i-const" min="15000" max="50000" step="1000" value="25000">
+        </div>
+        <div class="control-item">
+            <div class="control-top"><span>Caretaker Home & Utilities</span> <span class="val-display">₹<span id="d-home">8,00,000</span></span></div>
+            <input type="range" id="i-home" min="400000" max="1500000" step="50000" value="800000">
+        </div>
+        <div class="control-item">
+            <div class="control-top"><span>Play Area & Fencing</span> <span class="val-display">₹<span id="d-land">3,00,000</span></span></div>
+            <input type="range" id="i-land" min="100000" max="1000000" step="50000" value="300000">
+        </div>
+
+        <div class="section-label">2. Monthly OPEX</div>
+
+        <div class="control-item">
+            <div class="control-top"><span>Land Rent</span> <span class="val-display">₹<span id="d-rent">50,000</span></span></div>
+            <input type="range" id="i-rent" min="20000" max="150000" step="5000" value="50000">
+        </div>
+        
+        <div class="control-item">
+            <div class="control-top"><span>Staff Count</span> <span class="val-display"><span id="d-staff-n">3</span> People</span></div>
+            <input type="range" id="i-staff-n" min="1" max="10" value="3">
+        </div>
+        <div class="control-item">
+            <div class="control-top"><span>Avg Salary (Blended)</span> <span class="val-display">₹<span id="d-salary">18,000</span></span></div>
+            <input type="range" id="i-salary" min="12000" max="35000" step="1000" value="18000">
+        </div>
+
+        <div class="control-item">
+            <div class="control-top"><span>Food & Meds (Per Dog/Day)</span> <span class="val-display">₹<span id="d-food">180</span></span></div>
+            <input type="range" id="i-food" min="100" max="500" step="10" value="180">
+        </div>
+
+        <div class="section-label">3. Revenue Strategy</div>
+
+        <div class="control-item">
+            <div class="control-top"><span>Boarding Rate (Nightly)</span> <span class="val-display">₹<span id="d-rate">1,000</span></span></div>
+            <input type="range" id="i-rate" min="600" max="3000" step="50" value="1000">
+        </div>
+        <div class="control-item">
+            <div class="control-top"><span>Occupancy Rate</span> <span class="val-display"><span id="d-occ">40</span>%</span></div>
+            <input type="range" id="i-occ" min="10" max="100" value="40">
+        </div>
+
+        <div class="toggle-section">
+            <div class="control-top" style="color:#1e40af;"><strong>💎 Membership Booster</strong></div>
+            <div class="control-item" style="margin-bottom:10px;">
+                <div class="control-top"><span>Memberships Sold/Mo</span> <span class="val-display" id="d-mem-vol">5</span></div>
+                <input type="range" id="i-mem-vol" min="0" max="50" value="5">
+            </div>
+            <div class="control-item">
+                <div class="control-top"><span>Membership Price</span> <span class="val-display">₹<span id="d-mem-price">10,000</span></span></div>
+                <input type="range" id="i-mem-price" min="5000" max="25000" step="1000" value="10000">
+            </div>
+            <div style="font-size:0.75rem; color:#60a5fa;">Upfront cash for bundled nights. Great for cash flow.</div>
+        </div>
+
+        <div class="control-item">
+            <div class="control-top"><span>Grooming/Add-ons (Per Dog)</span> <span class="val-display">₹<span id="d-addon">150</span></span></div>
+            <input type="range" id="i-addon" min="0" max="1000" step="50" value="150">
+            <div style="font-size:0.75rem; color:var(--text-sub);">Avg spend per dog on bath/training.</div>
+        </div>
+
+    </div>
+
+    <div class="dashboard-panel">
+        
+        <div class="metrics-grid">
+            <div class="metric-card" style="--brand: #2563eb;">
+                <div class="metric-title">Startup Capital (CAPEX)</div>
+                <div class="metric-val" id="kpi-capex">₹19.0L</div>
+                <div class="metric-sub" style="color:#6b7280">Break-even: <span id="kpi-be-time">22 Mo</span></div>
+            </div>
+            <div class="metric-card" style="--brand: #10b981;">
+                <div class="metric-title">Monthly Net Profit</div>
+                <div class="metric-val" id="kpi-profit">₹54,000</div>
+                <div class="metric-sub" style="color:#10b981">Margin: <span id="kpi-margin">15%</span></div>
+            </div>
+            <div class="metric-card" style="--brand: #f59e0b;">
+                <div class="metric-title">Cash Flow (First Month)</div>
+                <div class="metric-val" id="kpi-cash">₹1.04L</div>
+                <div class="metric-sub" style="color:#f59e0b">Boosted by Membership</div>
+            </div>
+        </div>
+
+        <div class="finance-card">
+            <h3 style="margin-top:0;">Monthly Financial Statement</h3>
+            
+            <div class="table-row table-head">
+                <span>Revenue Stream</span>
+                <span>Amount</span>
+            </div>
+            <div class="table-row">
+                <span>🐶 Boarding Revenue (<span id="txt-dogs">12</span> dogs/day)</span>
+                <span id="r-board">₹3,60,000</span>
+            </div>
+            <div class="table-row">
+                <span>🛁 Add-on Services (Grooming/Training)</span>
+                <span id="r-addon">₹54,000</span>
+            </div>
+            <div class="table-row" style="background:#eff6ff; color:#1e40af; font-weight:600; border-radius:4px; padding:10px;">
+                <span>💎 Membership Sales (Cash In)</span>
+                <span id="r-mem">₹50,000</span>
+            </div>
+            <div class="table-row row-total" style="border-top:none; padding-top:5px;">
+                <span>Total Monthly Inflow</span>
+                <span style="color:#2563eb;" id="r-total">₹4,64,000</span>
+            </div>
+
+            <div style="height:30px;"></div>
+
+            <div class="table-row table-head">
+                <span>Expense Breakdown</span>
+                <span>Cost</span>
+            </div>
+            <div class="table-row">
+                <span>Rent (Land/Space)</span>
+                <span style="color:#ef4444;" id="e-rent">- ₹50,000</span>
+            </div>
+            <div class="table-row">
+                <span>Staff Salaries (<span id="txt-staff">3</span> pax)</span>
+                <span style="color:#ef4444;" id="e-staff">- ₹54,000</span>
+            </div>
+            <div class="table-row">
+                <span>Food & Consumables (Variable)</span>
+                <span style="color:#ef4444;" id="e-food">- ₹64,800</span>
+            </div>
+            <div class="table-row">
+                <span>Utilities & Maintenance (Scaled)</span>
+                <span style="color:#ef4444;" id="e-util">- ₹15,000</span>
+            </div>
+            <div class="table-row row-total">
+                <span>Net Operating Profit (EBITDA)</span>
+                <span id="val-ebitda">₹0</span>
+            </div>
+        </div>
+
+        <div class="finance-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Break-Even Visualizer</h3>
+                <span style="font-size:0.9rem; font-weight:bold; color:var(--text-sub);">Occupancy Needed: <span id="txt-be-occ">25%</span></span>
+            </div>
+            
+            <div style="background:#e5e7eb; height:24px; border-radius:12px; position:relative; overflow:hidden;">
+                <div id="mark-be" style="position:absolute; top:0; bottom:0; width:4px; background:#000; z-index:10; left:30%;"></div>
+                
+                <div id="bar-progress" style="height:100%; width:40%; background:var(--brand); transition: width 0.3s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:5px; color:#6b7280;">
+                <span>0%</span>
+                <span>Current Occupancy: <span id="txt-curr-occ">40%</span></span>
+                <span>100%</span>
+            </div>
+            <div style="font-size:0.8rem; margin-top:10px; color:#6b7280;">
+                <span style="display:inline-block; width:10px; height:10px; background:#000; margin-right:5px;"></span> Black Line = Break Even Point
+                <span style="display:inline-block; width:10px; height:10px; background:var(--brand); margin-right:5px; margin-left:15px;"></span> Blue Bar = Your Projection
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // HELPER: Currency Formatter
+    const currency = (num) => '₹' + Math.floor(num).toLocaleString('en-IN');
+    const getNum = (id) => parseInt(document.getElementById(id).value);
+    const setTxt = (id, val) => document.getElementById(id).innerText = val;
+
+    // INPUT IDS
+    const inputs = [
+        'i-kennels', 'i-const', 'i-home', 'i-land', 
+        'i-rent', 'i-staff-n', 'i-salary', 'i-food',
+        'i-rate', 'i-occ', 'i-mem-vol', 'i-mem-price', 'i-addon'
+    ];
+
+    // LISTENERS
+    inputs.forEach(id => document.getElementById(id).addEventListener('input', calculate));
+
+    function calculate() {
+        // --- 1. FETCH VALUES ---
+        const kennels = getNum('i-kennels');
+        const costConst = getNum('i-const');
+        const costHome = getNum('i-home');
+        const costLand = getNum('i-land');
+
+        const rent = getNum('i-rent');
+        const staffN = getNum('i-staff-n');
+        const salary = getNum('i-salary');
+        const foodCost = getNum('i-food');
+
+        const rate = getNum('i-rate');
+        const occ = getNum('i-occ');
+        const memVol = getNum('i-mem-vol');
+        const memPrice = getNum('i-mem-price');
+        const addonAvg = getNum('i-addon');
+
+        // Update UI Labels
+        setTxt('d-kennels', kennels);
+        setTxt('d-const', costConst.toLocaleString());
+        setTxt('d-home', costHome.toLocaleString());
+        setTxt('d-land', costLand.toLocaleString());
+        
+        setTxt('d-rent', rent.toLocaleString());
+        setTxt('d-staff-n', staffN);
+        setTxt('d-salary', salary.toLocaleString());
+        setTxt('d-food', foodCost);
+        
+        setTxt('d-rate', rate.toLocaleString());
+        setTxt('d-occ', occ);
+        setTxt('d-mem-vol', memVol);
+        setTxt('d-mem-price', memPrice.toLocaleString());
+        setTxt('d-addon', addonAvg);
+
+        // --- 2. CALCULATIONS ---
+        
+        // CAPEX
+        const totalCapex = (kennels * costConst) + costHome + costLand + 50000; // +50k License/Misc
+        
+        // OPERATIONAL DATA
+        const avgDogs = kennels * (occ / 100);
+        const days = 30;
+
+        // REVENUE
+        const revBoarding = avgDogs * rate * days;
+        const revAddon = avgDogs * addonAvg * days; // Addon is per day average? Or per stay? 
+        // Let's assume input is "Daily Addon Yield per occupied dog" to keep math simple with slider
+        // Or "Per Dog Per Stay"? Let's treat the slider as "Monthly Add-on Revenue per Occupied Dog".
+        // Actually, easiest for user: Slider = "Avg Addon Rev per Dog per Day" (e.g. 150 rs for grooming avg spread over stay)
+        // Let's stick to: Slider value * Dogs * 30.
+        
+        const revMem = memVol * memPrice;
+        const totalRev = revBoarding + revAddon + revMem;
+
+        // EXPENSES
+        const costStaff = staffN * salary;
+        const costFood = avgDogs * foodCost * days;
+        
+        // Utilities Scaling: Base 5000 + (300 per kennel unit built)
+        const costUtil = 5000 + (kennels * 300); 
+        
+        const totalExp = rent + costStaff + costFood + costUtil;
+
+        // PROFIT
+        const ebitda = totalRev - totalExp;
+        const margin = totalRev > 0 ? (ebitda / totalRev) * 100 : 0;
+
+        // ROI
+        let monthsToBreakEven = 0;
+        if (ebitda > 0) {
+            monthsToBreakEven = totalCapex / ebitda;
+        }
+
+        // BREAK EVEN OCCUPANCY
+        // Profit = (Dogs * Rate * 30) + (Dogs * Addon * 30) + Mem - (Dogs * Food * 30) - Fixed
+        // Fixed = Rent + Staff + Utils
+        // Contribution per Dog = 30 * (Rate + Addon - Food)
+        // BE Dogs = (Fixed - Mem) / Contribution
+        
+        const fixedCosts = rent + costStaff + costUtil;
+        const contributionPerDog = 30 * (rate + addonAvg - foodCost);
+        
+        let beDogs = 0;
+        if (contributionPerDog > 0) {
+            beDogs = (fixedCosts - revMem) / contributionPerDog;
+        }
+        const beOcc = (beDogs / kennels) * 100;
+
+
+        // --- 3. RENDER OUTPUTS ---
+        
+        setTxt('kpi-capex', '₹' + (totalCapex/100000).toFixed(1) + 'L');
+        
+        const kpiProfit = document.getElementById('kpi-profit');
+        kpiProfit.innerText = currency(ebitda);
+        kpiProfit.style.color = ebitda >= 0 ? '#10b981' : '#ef4444';
+        
+        setTxt('kpi-margin', margin.toFixed(1) + '%');
+        setTxt('kpi-cash', currency(totalRev)); // Cash flow focus
+        
+        setTxt('kpi-be-time', ebitda > 0 ? monthsToBreakEven.toFixed(1) + ' Mo' : 'Never');
+
+        // Table
+        setTxt('txt-dogs', avgDogs.toFixed(1));
+        setTxt('r-board', currency(revBoarding));
+        setTxt('r-addon', currency(revAddon));
+        setTxt('r-mem', currency(revMem));
+        setTxt('r-total', currency(totalRev));
+
+        setTxt('e-rent', '- ' + currency(rent));
+        setTxt('txt-staff', staffN);
+        setTxt('e-staff', '- ' + currency(costStaff));
+        setTxt('e-food', '- ' + currency(costFood));
+        setTxt('e-util', '- ' + currency(costUtil));
+        
+        const valEbitda = document.getElementById('val-ebitda');
+        valEbitda.innerText = currency(ebitda);
+        valEbitda.style.color = ebitda >= 0 ? '#10b981' : '#ef4444';
+
+        // BE Visual
+        const beClamped = Math.min(Math.max(beOcc, 0), 100);
+        setTxt('txt-be-occ', beClamped.toFixed(1) + '%');
+        setTxt('txt-curr-occ', occ + '%');
+        
+        document.getElementById('mark-be').style.left = beClamped + '%';
+        
+        const bar = document.getElementById('bar-progress');
+        bar.style.width = occ + '%';
+        bar.style.background = occ > beOcc ? '#10b981' : '#ef4444'; // Green if safe, Red if risky
+    }
+
+    // Init
+    calculate();
+</script>
+
+</body>
+</html>
